@@ -3,45 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI & Keyframe Animation Maker</title>
+    <title>Ultimate Animation Studio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; display: flex; background-color: #2c3e50; margin: 0; padding: 20px; color: #333; }
-        #app-container { display: flex; width: 100%; max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); overflow: hidden; height: 600px; }
+        #app-container { display: flex; width: 100%; max-width: 1300px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); overflow: hidden; height: 750px; }
         
-        /* The 3D Stage */
         #viewport-container { flex: 2; background-color: #111; position: relative; }
+        #controls-container { flex: 1.2; padding: 20px; background-color: #fafafa; border-left: 2px solid #eee; overflow-y: auto; }
         
-        /* The Control Panel */
-        #controls-container { flex: 1.2; padding: 20px; background-color: #fafafa; border-left: 2px solid #eee; display: flex; flex-direction: column; overflow-y: auto; }
+        .section { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; }
+        .section h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.1em; color: #444; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         
-        .section { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; }
-        .section h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.1em; color: #444; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .btn-group { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+        button { padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; background-color: #6c5ce7; }
+        button:hover { background-color: #5b4bc4; filter: brightness(1.1); }
+        .btn-danger { background-color: #d63031; }
+        .btn-success { background-color: #00b894; }
+        .btn-record { background-color: #e84393; width: 100%; margin-top: 5px;}
         
-        /* AI Chat Inputs */
-        #ai-input-area { display: flex; margin-bottom: 10px; }
-        #ai-input-area input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px 0 0 4px; }
-        #ai-input-area button { padding: 10px 15px; background-color: #6c5ce7; color: white; border: none; border-radius: 0 4px 4px 0; cursor: pointer; font-weight: bold; }
-        #ai-input-area button:hover { background-color: #5b4bc4; }
-        #ai-status { font-size: 0.85em; color: #6c5ce7; font-style: italic; min-height: 20px; }
-
-        /* Timeline & Properties */
-        .control-group { margin-bottom: 12px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; font-size: 0.9em; }
-        input[type="color"] { width: 100%; height: 35px; border: none; cursor: pointer; }
+        select, input[type="text"] { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        .control-group { margin-bottom: 10px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85em; }
+        input[type="color"] { width: 100%; height: 30px; border: none; cursor: pointer; }
         input[type="range"] { width: 100%; cursor: pointer; }
         .value-display { float: right; font-weight: normal; color: #888; }
-
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        button.action-btn { flex: 1; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; }
-        #addFrameBtn { background-color: #00b894; }
-        #addFrameBtn:hover { background-color: #00a884; }
-        #playBtn { background-color: #0984e3; }
-        #playBtn:hover { background-color: #0773c6; }
-        #clearBtn { background-color: #d63031; }
-        #clearBtn:hover { background-color: #c02a2a; }
-
-        #timeline-status { margin-top: 10px; font-size: 0.9em; font-weight: bold; color: #d63031; text-align: center; }
+        
+        #timeline-status { font-weight: bold; color: #d63031; text-align: center; margin: 10px 0; }
+        #ai-status { font-size: 0.85em; color: #6c5ce7; font-style: italic; }
     </style>
 </head>
 <body>
@@ -50,42 +40,58 @@
         <div id="viewport-container"></div>
 
         <div id="controls-container">
-            <h2 style="margin-top:0;">Director's Panel</h2>
+            <h2 style="margin-top:0;">Animation Studio</h2>
             
             <div class="section">
+                <h3>📦 Object Manager</h3>
+                <div class="btn-group">
+                    <button onclick="addShape('cube')">+ Cube</button>
+                    <button onclick="addShape('sphere')">+ Sphere</button>
+                    <button onclick="addShape('cylinder')">+ Cylinder</button>
+                </div>
+                <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                    <input type="text" id="textInput" placeholder="Type text here...">
+                    <button onclick="addText()">+ Text</button>
+                </div>
+                
+                <label>Active Object:</label>
+                <select id="objectSelect" onchange="selectObject()"></select>
+                <button class="btn-danger" style="width: 100%;" onclick="deleteActiveObject()">🗑 Delete Selected Object</button>
+            </div>
+
+            <div class="section">
                 <h3>🧠 AI Assistant</h3>
-                <div id="ai-input-area">
-                    <input type="text" id="aiInput" placeholder="e.g., 'Move right, turn red, and spin'">
-                    <button onclick="handleAICommand()">Generate</button>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="aiInput" placeholder="e.g. 'move right and turn red'">
+                    <button onclick="handleAICommand()">Do it</button>
                 </div>
-                <div id="ai-status">Ready for commands!</div>
+                <div id="ai-status">Ready. Select an object first!</div>
             </div>
 
             <div class="section">
-                <h3>🎬 Timeline</h3>
-                <div class="btn-group">
-                    <button class="action-btn" id="addFrameBtn" onclick="addKeyframe()">+ Add Keyframe</button>
+                <h3>🎬 Timeline & Export</h3>
+                <div class="btn-group" style="display: flex;">
+                    <button class="btn-success" style="flex:1;" onclick="addKeyframe()">+ Add Keyframe</button>
+                    <button class="btn-danger" style="flex:1;" onclick="clearTimeline()">Clear</button>
                 </div>
-                <div id="timeline-status">Frames Recorded: 0</div>
-                <div class="btn-group">
-                    <button class="action-btn" id="playBtn" onclick="playAnimation()">▶ Play</button>
-                    <button class="action-btn" id="clearBtn" onclick="clearTimeline()">🗑 Clear</button>
-                </div>
+                <div id="timeline-status">Frames: 0</div>
+                <button style="width: 100%; background-color: #0984e3;" onclick="playAnimation()">▶ Play Animation</button>
+                <button class="btn-record" id="recordBtn" onclick="toggleRecording()">🎥 Export Video (WebM)</button>
             </div>
 
             <div class="section">
-                <h3>⚙️ Properties</h3>
+                <h3>⚙️ Properties (Active Object)</h3>
                 <div class="control-group">
                     <label>Position X <span class="value-display" id="valX">0</span></label>
-                    <input type="range" id="posX" min="-4" max="4" step="0.1" value="0">
+                    <input type="range" id="posX" min="-5" max="5" step="0.1" value="0">
                 </div>
                 <div class="control-group">
                     <label>Position Y <span class="value-display" id="valY">0</span></label>
-                    <input type="range" id="posY" min="-3" max="3" step="0.1" value="0">
+                    <input type="range" id="posY" min="-4" max="4" step="0.1" value="0">
                 </div>
                 <div class="control-group">
-                    <label>Size <span class="value-display" id="valSize">1.0</span></label>
-                    <input type="range" id="size" min="0.5" max="3" step="0.1" value="1.0">
+                    <label>Scale <span class="value-display" id="valSize">1.0</span></label>
+                    <input type="range" id="size" min="0.5" max="4" step="0.1" value="1.0">
                 </div>
                 <div class="control-group">
                     <label>Rotation <span class="value-display" id="valRot">0</span></label>
@@ -100,138 +106,266 @@
     </div>
 
     <script>
-        // --- 1. Setup the 3D Stage ---
+        // --- 1. System Setup ---
         const viewport = document.getElementById('viewport-container');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, viewport.clientWidth / viewport.clientHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
         
+        // We must preserve drawing buffer for the video recorder to capture the canvas!
+        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
         renderer.setSize(viewport.clientWidth, viewport.clientHeight);
         viewport.appendChild(renderer.domElement);
 
         const light = new THREE.DirectionalLight(0xffffff, 1);
         light.position.set(5, 5, 5);
         scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040));
+        scene.add(new THREE.AmbientLight(0x606060));
+        camera.position.z = 6;
 
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshStandardMaterial({ color: 0x0984e3 });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
-        camera.position.z = 5;
+        // --- 2. Object Management ---
+        let objects = [];
+        let activeObject = null;
+        let objectCounter = 0;
 
-        // --- 2. Manual Controls Logic ---
+        function addShape(type) {
+            let geometry;
+            if (type === 'cube') geometry = new THREE.BoxGeometry(1, 1, 1);
+            if (type === 'sphere') geometry = new THREE.SphereGeometry(0.7, 32, 32);
+            if (type === 'cylinder') geometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
+
+            const material = new THREE.MeshStandardMaterial({ color: 0x0984e3 });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData = { id: `Obj_${++objectCounter}`, type: type, isText: false };
+            scene.add(mesh);
+            objects.push(mesh);
+            
+            updateDropdown();
+            setActiveObject(mesh);
+        }
+
+        function addText() {
+            const text = document.getElementById('textInput').value || "Hello!";
+            
+            // Create a 2D HTML Canvas to draw the text
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 256;
+            const context = canvas.getContext('2d');
+            context.fillStyle = 'white';
+            context.font = 'bold 80px Arial';
+            context.textAlign = 'center';
+            context.fillText(text, 256, 150);
+
+            // Wrap it onto a 3D Sprite
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, color: 0xffffff });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(4, 2, 1); // Make it wide
+            
+            sprite.userData = { id: `Text_${++objectCounter}`, type: 'text', isText: true, originalColor: "#ffffff" };
+            scene.add(sprite);
+            objects.push(sprite);
+            
+            updateDropdown();
+            setActiveObject(sprite);
+            document.getElementById('textInput').value = '';
+        }
+
+        function updateDropdown() {
+            const select = document.getElementById('objectSelect');
+            select.innerHTML = '';
+            objects.forEach(obj => {
+                let opt = document.createElement('option');
+                opt.value = obj.userData.id;
+                opt.innerText = `${obj.userData.type} (${obj.userData.id})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function selectObject() {
+            const selectedId = document.getElementById('objectSelect').value;
+            const obj = objects.find(o => o.userData.id === selectedId);
+            if (obj) setActiveObject(obj);
+        }
+
+        function setActiveObject(obj) {
+            activeObject = obj;
+            document.getElementById('objectSelect').value = obj.userData.id;
+            updateUI();
+        }
+
+        function deleteActiveObject() {
+            if (!activeObject) return;
+            scene.remove(activeObject);
+            objects = objects.filter(o => o.userData.id !== activeObject.userData.id);
+            activeObject = null;
+            updateDropdown();
+            if (objects.length > 0) setActiveObject(objects[0]);
+        }
+
+        // --- 3. Properties UI ---
         const controls = ['posX', 'posY', 'size', 'rotation'];
         
         function updateUI() {
-            document.getElementById('posX').value = cube.position.x;
-            document.getElementById('valX').innerText = cube.position.x.toFixed(1);
-            document.getElementById('posY').value = cube.position.y;
-            document.getElementById('valY').innerText = cube.position.y.toFixed(1);
-            document.getElementById('size').value = cube.scale.x;
-            document.getElementById('valSize').innerText = cube.scale.x.toFixed(1);
-            document.getElementById('rotation').value = cube.rotation.x;
-            document.getElementById('valRot').innerText = cube.rotation.x.toFixed(1);
-            document.getElementById('colorPicker').value = '#' + cube.material.color.getHexString();
+            if (!activeObject) return;
+            document.getElementById('posX').value = activeObject.position.x;
+            document.getElementById('valX').innerText = activeObject.position.x.toFixed(1);
+            document.getElementById('posY').value = activeObject.position.y;
+            document.getElementById('valY').innerText = activeObject.position.y.toFixed(1);
+            document.getElementById('size').value = activeObject.scale.x;
+            document.getElementById('valSize').innerText = activeObject.scale.x.toFixed(1);
+            
+            // Text sprites don't rotate exactly like 3D meshes, so we disable rotation for text to avoid bugs
+            if (!activeObject.userData.isText) {
+                document.getElementById('rotation').value = activeObject.rotation.x;
+                document.getElementById('valRot').innerText = activeObject.rotation.x.toFixed(1);
+                document.getElementById('colorPicker').value = '#' + activeObject.material.color.getHexString();
+                document.getElementById('colorPicker').disabled = false;
+            } else {
+                document.getElementById('rotation').value = 0;
+                document.getElementById('valRot').innerText = "0";
+                document.getElementById('colorPicker').disabled = true; // Sprites use textures, so color picking is disabled for text
+            }
         }
 
         controls.forEach(id => {
             document.getElementById(id).addEventListener('input', (e) => {
+                if (!activeObject) return;
                 let val = parseFloat(e.target.value);
                 let textId = 'val' + id.charAt(0).toUpperCase() + id.slice(1);
                 document.getElementById(textId).innerText = val;
 
-                if (id === 'posX') cube.position.x = val;
-                if (id === 'posY') cube.position.y = val;
-                if (id === 'size') cube.scale.set(val, val, val);
-                if (id === 'rotation') { cube.rotation.x = val; cube.rotation.y = val; }
+                if (id === 'posX') activeObject.position.x = val;
+                if (id === 'posY') activeObject.position.y = val;
+                if (id === 'size') {
+                    if (activeObject.userData.isText) activeObject.scale.set(val * 4, val * 2, 1); // Keep text proportions
+                    else activeObject.scale.set(val, val, val);
+                }
+                if (id === 'rotation' && !activeObject.userData.isText) { 
+                    activeObject.rotation.x = val; activeObject.rotation.y = val; 
+                }
             });
         });
 
         document.getElementById('colorPicker').addEventListener('input', (e) => {
-            cube.material.color.set(e.target.value);
+            if (activeObject && !activeObject.userData.isText) {
+                activeObject.material.color.set(e.target.value);
+            }
         });
 
-        // --- 3. The Animation Timeline Logic ---
+        // --- 4. The Timeline ---
         let keyframes = [];
         let isPlaying = false;
         let playIndex = 0;
-        let transitionProgress = 0;
+        let tProgress = 0;
 
         function addKeyframe() {
-            keyframes.push({
-                x: cube.position.x,
-                y: cube.position.y,
-                size: cube.scale.x,
-                rotation: cube.rotation.x,
-                color: '#' + cube.material.color.getHexString() 
+            // We save the state of ALL objects in the scene into one frame
+            let frameState = [];
+            objects.forEach(obj => {
+                frameState.push({
+                    id: obj.userData.id,
+                    x: obj.position.x, y: obj.position.y,
+                    size: obj.scale.x,
+                    rotation: obj.userData.isText ? 0 : obj.rotation.x,
+                    color: obj.userData.isText ? "#ffffff" : '#' + obj.material.color.getHexString()
+                });
             });
-            document.getElementById('timeline-status').innerText = `Frames Recorded: ${keyframes.length}`;
+            keyframes.push(frameState);
+            document.getElementById('timeline-status').innerText = `Frames: ${keyframes.length}`;
         }
 
         function clearTimeline() {
             keyframes = [];
-            document.getElementById('timeline-status').innerText = "Frames Recorded: 0";
-            cube.position.set(0,0,0);
-            cube.scale.set(1,1,1);
-            cube.rotation.set(0,0,0);
-            cube.material.color.set("#0984e3");
-            updateUI();
+            document.getElementById('timeline-status').innerText = "Frames: 0";
         }
 
         function playAnimation() {
-            if (keyframes.length < 2) {
-                alert("You need at least 2 keyframes to play an animation!");
-                return;
-            }
-            isPlaying = true;
-            playIndex = 0;
-            transitionProgress = 0;
+            if (keyframes.length < 2) return alert("Add at least 2 keyframes to play!");
+            isPlaying = true; playIndex = 0; tProgress = 0;
             document.getElementById('timeline-status').innerText = "PLAYING...";
         }
 
-        // --- 4. The Local AI Brain Logic ---
+        // --- 5. Improved AI Engine ---
         function handleAICommand() {
+            if (!activeObject) return alert("Select an object to give it a command!");
             const input = document.getElementById('aiInput').value.toLowerCase();
             const status = document.getElementById('ai-status');
-            if (!input) return;
-
-            status.innerText = "Thinking...";
-            clearTimeline(); // Clear old animation
-
-            // Frame 1: Record starting position
-            addKeyframe();
-
-            // AI Logic: Modify the cube based on words
-            let changed = false;
-
-            // Colors
-            if (input.includes('red')) { cube.material.color.set("#e74c3c"); changed = true; }
-            if (input.includes('green')) { cube.material.color.set("#2ecc71"); changed = true; }
-            if (input.includes('yellow')) { cube.material.color.set("#f1c40f"); changed = true; }
             
-            // Movement
-            if (input.includes('right')) { cube.position.x = 3; changed = true; }
-            if (input.includes('left')) { cube.position.x = -3; changed = true; }
-            if (input.includes('up')) { cube.position.y = 2; changed = true; }
-            if (input.includes('down')) { cube.position.y = -2; changed = true; }
-            
-            // Size & Action
-            if (input.includes('big') || input.includes('grow')) { cube.scale.set(2, 2, 2); changed = true; }
-            if (input.includes('small') || input.includes('shrink')) { cube.scale.set(0.5, 0.5, 0.5); changed = true; }
-            if (input.includes('spin') || input.includes('rotate')) { cube.rotation.x = 6.28; cube.rotation.y = 6.28; changed = true; }
+            let understood = false;
 
-            if (changed) {
+            if (input.includes('red')) { activeObject.material.color.set("#e74c3c"); understood = true; }
+            if (input.includes('blue')) { activeObject.material.color.set("#0984e3"); understood = true; }
+            if (input.includes('green')) { activeObject.material.color.set("#2ecc71"); understood = true; }
+            
+            if (input.includes('right')) { activeObject.position.x += 2; understood = true; }
+            if (input.includes('left')) { activeObject.position.x -= 2; understood = true; }
+            if (input.includes('up')) { activeObject.position.y += 2; understood = true; }
+            if (input.includes('down')) { activeObject.position.y -= 2; understood = true; }
+            
+            if (input.includes('big') || input.includes('grow')) { 
+                if(!activeObject.userData.isText) activeObject.scale.set(2, 2, 2); 
+                understood = true; 
+            }
+            if (input.includes('spin') && !activeObject.userData.isText) { 
+                activeObject.rotation.x += 3.14; activeObject.rotation.y += 3.14; 
+                understood = true; 
+            }
+
+            if (understood) {
                 updateUI();
-                addKeyframe(); // Frame 2: Record the new state
-                status.innerText = "Animation generated! Playing now...";
-                playAnimation();
+                status.innerText = "Command executed! Add a keyframe to save this.";
             } else {
-                status.innerText = "I didn't quite catch that. Try 'Move left and shrink'!";
+                status.innerText = "Didn't understand. Try: 'move right and turn red'.";
             }
         }
 
-        // --- 5. The Render Loop ---
+        // --- 6. Video Export (MediaRecorder) ---
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        function toggleRecording() {
+            const btn = document.getElementById('recordBtn');
+            if (!isRecording) {
+                // Start Recording
+                recordedChunks = [];
+                const stream = renderer.domElement.captureStream(30); // 30 FPS
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+                
+                mediaRecorder.onstop = function() {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'my-animation.webm';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                btn.innerText = "⏹ Stop Recording & Save";
+                btn.style.backgroundColor = "#d63031"; // Red for recording
+                
+                // Automatically start playback when recording starts!
+                if(keyframes.length >= 2) playAnimation();
+
+            } else {
+                // Stop Recording
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.innerText = "🎥 Export Video (WebM)";
+                btn.style.backgroundColor = "#e84393";
+            }
+        }
+
+        // --- 7. Main Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
@@ -239,38 +373,51 @@
                 let frameA = keyframes[playIndex];
                 let frameB = keyframes[playIndex + 1];
 
-                // Smooth interpolation
-                cube.position.x = THREE.MathUtils.lerp(frameA.x, frameB.x, transitionProgress);
-                cube.position.y = THREE.MathUtils.lerp(frameA.y, frameB.y, transitionProgress);
-                
-                let s = THREE.MathUtils.lerp(frameA.size, frameB.size, transitionProgress);
-                cube.scale.set(s, s, s);
+                // Update all objects based on the timeline
+                objects.forEach(obj => {
+                    let stateA = frameA.find(s => s.id === obj.userData.id);
+                    let stateB = frameB.find(s => s.id === obj.userData.id);
+                    
+                    if (stateA && stateB) {
+                        obj.position.x = THREE.MathUtils.lerp(stateA.x, stateB.x, tProgress);
+                        obj.position.y = THREE.MathUtils.lerp(stateA.y, stateB.y, tProgress);
+                        
+                        if (!obj.userData.isText) {
+                            let s = THREE.MathUtils.lerp(stateA.size, stateB.size, tProgress);
+                            obj.scale.set(s, s, s);
+                            
+                            let r = THREE.MathUtils.lerp(stateA.rotation, stateB.rotation, tProgress);
+                            obj.rotation.x = r; obj.rotation.y = r;
 
-                let r = THREE.MathUtils.lerp(frameA.rotation, frameB.rotation, transitionProgress);
-                cube.rotation.x = r; cube.rotation.y = r;
+                            let colorA = new THREE.Color(stateA.color);
+                            let colorB = new THREE.Color(stateB.color);
+                            obj.material.color.lerpColors(colorA, colorB, tProgress);
+                        } else {
+                            // Text scaling is slightly different
+                            let s = THREE.MathUtils.lerp(stateA.size, stateB.size, tProgress);
+                            obj.scale.set(s * 4, s * 2, 1);
+                        }
+                    }
+                });
 
-                // Color interpolation
-                let colorA = new THREE.Color(frameA.color);
-                let colorB = new THREE.Color(frameB.color);
-                cube.material.color.lerpColors(colorA, colorB, transitionProgress);
+                if (activeObject) updateUI();
 
-                updateUI(); // Keep sliders synced with animation!
-
-                transitionProgress += 0.015; // Speed of animation
-
-                if (transitionProgress >= 1) {
-                    transitionProgress = 0;
+                tProgress += 0.02; // Animation speed
+                if (tProgress >= 1) {
+                    tProgress = 0;
                     playIndex++;
                     if (playIndex >= keyframes.length - 1) {
                         isPlaying = false;
-                        document.getElementById('timeline-status').innerText = `Frames Recorded: ${keyframes.length}`;
-                        document.getElementById('ai-status').innerText = "Ready for commands!";
+                        document.getElementById('timeline-status').innerText = `Frames: ${keyframes.length}`;
                     }
                 }
             }
 
             renderer.render(scene, camera);
         }
+
+        // Add a starting cube automatically!
+        addShape('cube');
         animate();
     </script>
 </body>
