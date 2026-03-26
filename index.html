@@ -1,1 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI & Keyframe Animation Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; background-color: #2c3e50; margin: 0; padding: 20px; color: #333; }
+        #app-container { display: flex; width: 100%; max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); overflow: hidden; height: 600px; }
+        
+        /* The 3D Stage */
+        #viewport-container { flex: 2; background-color: #111; position: relative; }
+        
+        /* The Control Panel */
+        #controls-container { flex: 1.2; padding: 20px; background-color: #fafafa; border-left: 2px solid #eee; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        .section { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; }
+        .section h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.1em; color: #444; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        
+        /* AI Chat Inputs */
+        #ai-input-area { display: flex; margin-bottom: 10px; }
+        #ai-input-area input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px 0 0 4px; }
+        #ai-input-area button { padding: 10px 15px; background-color: #6c5ce7; color: white; border: none; border-radius: 0 4px 4px 0; cursor: pointer; font-weight: bold; }
+        #ai-input-area button:hover { background-color: #5b4bc4; }
+        #ai-status { font-size: 0.85em; color: #6c5ce7; font-style: italic; min-height: 20px; }
 
+        /* Timeline & Properties */
+        .control-group { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; font-size: 0.9em; }
+        input[type="color"] { width: 100%; height: 35px; border: none; cursor: pointer; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+        .value-display { float: right; font-weight: normal; color: #888; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        button.action-btn { flex: 1; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; }
+        #addFrameBtn { background-color: #00b894; }
+        #addFrameBtn:hover { background-color: #00a884; }
+        #playBtn { background-color: #0984e3; }
+        #playBtn:hover { background-color: #0773c6; }
+        #clearBtn { background-color: #d63031; }
+        #clearBtn:hover { background-color: #c02a2a; }
+
+        #timeline-status { margin-top: 10px; font-size: 0.9em; font-weight: bold; color: #d63031; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <div id="viewport-container"></div>
+
+        <div id="controls-container">
+            <h2 style="margin-top:0;">Director's Panel</h2>
+            
+            <div class="section">
+                <h3>🧠 AI Assistant</h3>
+                <div id="ai-input-area">
+                    <input type="text" id="aiInput" placeholder="e.g., 'Move right, turn red, and spin'">
+                    <button onclick="handleAICommand()">Generate</button>
+                </div>
+                <div id="ai-status">Ready for commands!</div>
+            </div>
+
+            <div class="section">
+                <h3>🎬 Timeline</h3>
+                <div class="btn-group">
+                    <button class="action-btn" id="addFrameBtn" onclick="addKeyframe()">+ Add Keyframe</button>
+                </div>
+                <div id="timeline-status">Frames Recorded: 0</div>
+                <div class="btn-group">
+                    <button class="action-btn" id="playBtn" onclick="playAnimation()">▶ Play</button>
+                    <button class="action-btn" id="clearBtn" onclick="clearTimeline()">🗑 Clear</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>⚙️ Properties</h3>
+                <div class="control-group">
+                    <label>Position X <span class="value-display" id="valX">0</span></label>
+                    <input type="range" id="posX" min="-4" max="4" step="0.1" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Position Y <span class="value-display" id="valY">0</span></label>
+                    <input type="range" id="posY" min="-3" max="3" step="0.1" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Size <span class="value-display" id="valSize">1.0</span></label>
+                    <input type="range" id="size" min="0.5" max="3" step="0.1" value="1.0">
+                </div>
+                <div class="control-group">
+                    <label>Rotation <span class="value-display" id="valRot">0</span></label>
+                    <input type="range" id="rotation" min="0" max="6.28" step="0.1" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Color</label>
+                    <input type="color" id="colorPicker" value="#0984e3">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Setup the 3D Stage ---
+        const viewport = document.getElementById('viewport-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, viewport.clientWidth / viewport.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+        viewport.appendChild(renderer.domElement);
+
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 5, 5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshStandardMaterial({ color: 0x0984e3 });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        camera.position.z = 5;
+
+        // --- 2. Manual Controls Logic ---
+        const controls = ['posX', 'posY', 'size', 'rotation'];
+        
+        function updateUI() {
+            document.getElementById('posX').value = cube.position.x;
+            document.getElementById('valX').innerText = cube.position.x.toFixed(1);
+            document.getElementById('posY').value = cube.position.y;
+            document.getElementById('valY').innerText = cube.position.y.toFixed(1);
+            document.getElementById('size').value = cube.scale.x;
+            document.getElementById('valSize').innerText = cube.scale.x.toFixed(1);
+            document.getElementById('rotation').value = cube.rotation.x;
+            document.getElementById('valRot').innerText = cube.rotation.x.toFixed(1);
+            document.getElementById('colorPicker').value = '#' + cube.material.color.getHexString();
+        }
+
+        controls.forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                let val = parseFloat(e.target.value);
+                let textId = 'val' + id.charAt(0).toUpperCase() + id.slice(1);
+                document.getElementById(textId).innerText = val;
+
+                if (id === 'posX') cube.position.x = val;
+                if (id === 'posY') cube.position.y = val;
+                if (id === 'size') cube.scale.set(val, val, val);
+                if (id === 'rotation') { cube.rotation.x = val; cube.rotation.y = val; }
+            });
+        });
+
+        document.getElementById('colorPicker').addEventListener('input', (e) => {
+            cube.material.color.set(e.target.value);
+        });
+
+        // --- 3. The Animation Timeline Logic ---
+        let keyframes = [];
+        let isPlaying = false;
+        let playIndex = 0;
+        let transitionProgress = 0;
+
+        function addKeyframe() {
+            keyframes.push({
+                x: cube.position.x,
+                y: cube.position.y,
+                size: cube.scale.x,
+                rotation: cube.rotation.x,
+                color: '#' + cube.material.color.getHexString() 
+            });
+            document.getElementById('timeline-status').innerText = `Frames Recorded: ${keyframes.length}`;
+        }
+
+        function clearTimeline() {
+            keyframes = [];
+            document.getElementById('timeline-status').innerText = "Frames Recorded: 0";
+            cube.position.set(0,0,0);
+            cube.scale.set(1,1,1);
+            cube.rotation.set(0,0,0);
+            cube.material.color.set("#0984e3");
+            updateUI();
+        }
+
+        function playAnimation() {
+            if (keyframes.length < 2) {
+                alert("You need at least 2 keyframes to play an animation!");
+                return;
+            }
+            isPlaying = true;
+            playIndex = 0;
+            transitionProgress = 0;
+            document.getElementById('timeline-status').innerText = "PLAYING...";
+        }
+
+        // --- 4. The Local AI Brain Logic ---
+        function handleAICommand() {
+            const input = document.getElementById('aiInput').value.toLowerCase();
+            const status = document.getElementById('ai-status');
+            if (!input) return;
+
+            status.innerText = "Thinking...";
+            clearTimeline(); // Clear old animation
+
+            // Frame 1: Record starting position
+            addKeyframe();
+
+            // AI Logic: Modify the cube based on words
+            let changed = false;
+
+            // Colors
+            if (input.includes('red')) { cube.material.color.set("#e74c3c"); changed = true; }
+            if (input.includes('green')) { cube.material.color.set("#2ecc71"); changed = true; }
+            if (input.includes('yellow')) { cube.material.color.set("#f1c40f"); changed = true; }
+            
+            // Movement
+            if (input.includes('right')) { cube.position.x = 3; changed = true; }
+            if (input.includes('left')) { cube.position.x = -3; changed = true; }
+            if (input.includes('up')) { cube.position.y = 2; changed = true; }
+            if (input.includes('down')) { cube.position.y = -2; changed = true; }
+            
+            // Size & Action
+            if (input.includes('big') || input.includes('grow')) { cube.scale.set(2, 2, 2); changed = true; }
+            if (input.includes('small') || input.includes('shrink')) { cube.scale.set(0.5, 0.5, 0.5); changed = true; }
+            if (input.includes('spin') || input.includes('rotate')) { cube.rotation.x = 6.28; cube.rotation.y = 6.28; changed = true; }
+
+            if (changed) {
+                updateUI();
+                addKeyframe(); // Frame 2: Record the new state
+                status.innerText = "Animation generated! Playing now...";
+                playAnimation();
+            } else {
+                status.innerText = "I didn't quite catch that. Try 'Move left and shrink'!";
+            }
+        }
+
+        // --- 5. The Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isPlaying && keyframes.length > 1) {
+                let frameA = keyframes[playIndex];
+                let frameB = keyframes[playIndex + 1];
+
+                // Smooth interpolation
+                cube.position.x = THREE.MathUtils.lerp(frameA.x, frameB.x, transitionProgress);
+                cube.position.y = THREE.MathUtils.lerp(frameA.y, frameB.y, transitionProgress);
+                
+                let s = THREE.MathUtils.lerp(frameA.size, frameB.size, transitionProgress);
+                cube.scale.set(s, s, s);
+
+                let r = THREE.MathUtils.lerp(frameA.rotation, frameB.rotation, transitionProgress);
+                cube.rotation.x = r; cube.rotation.y = r;
+
+                // Color interpolation
+                let colorA = new THREE.Color(frameA.color);
+                let colorB = new THREE.Color(frameB.color);
+                cube.material.color.lerpColors(colorA, colorB, transitionProgress);
+
+                updateUI(); // Keep sliders synced with animation!
+
+                transitionProgress += 0.015; // Speed of animation
+
+                if (transitionProgress >= 1) {
+                    transitionProgress = 0;
+                    playIndex++;
+                    if (playIndex >= keyframes.length - 1) {
+                        isPlaying = false;
+                        document.getElementById('timeline-status').innerText = `Frames Recorded: ${keyframes.length}`;
+                        document.getElementById('ai-status').innerText = "Ready for commands!";
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
